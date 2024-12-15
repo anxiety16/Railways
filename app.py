@@ -66,6 +66,20 @@ class Type(db.Model):
     type_code = db.Column(db.String(10), primary_key=True)
     type_description = db.Column(db.String(255), nullable=False)
 
+# Model for 'station_stops' table
+class StationStop(db.Model):
+    __tablename__ = 'station_stops'
+    station_id = db.Column(db.Integer, primary_key=True)
+    line_id = db.Column(db.Integer, db.ForeignKey('railway_lines.line_number'))
+    next_station_id = db.Column(db.Integer, db.ForeignKey('station_stops.station_id'))
+    station_name = db.Column(db.String(255), nullable=True)
+    first_stop_yn = db.Column(db.Boolean, nullable=True)
+    last_stop_yn = db.Column(db.Boolean, nullable=True)
+    other_details = db.Column(db.Text, nullable=True)
+
+    line = db.relationship('RailwayLine', backref=db.backref('station_stops', lazy=True))
+    next_station = db.relationship('StationStop', remote_side=[station_id])
+
 @app.route('/')
 def home():
     return """
@@ -296,6 +310,108 @@ def delete_type(type_code):
 
     return jsonify({'message': f'Type {type_code} has been deleted'}), 200
 
+
+@app.route('/station_stops', methods=['GET'])
+def get_station_stops():
+    station_stops = StationStop.query.all()
+    return jsonify([
+        {
+            'station_id': s.station_id,
+            'line_id': s.line_id,
+            'next_station_id': s.next_station_id,
+            'station_name': s.station_name,
+            'first_stop_yn': s.first_stop_yn,
+            'last_stop_yn': s.last_stop_yn,
+            'other_details': s.other_details
+        }
+        for s in station_stops
+    ])
+
+@app.route('/station_stops', methods=['POST'])
+def create_station_stop():
+    if not request.json:
+        abort(400, description="Request must be JSON")
+    
+    required_fields = ['line_id', 'station_name', 'first_stop_yn', 'last_stop_yn']
+    if not all(field in request.json for field in required_fields):
+        abort(400, description="Missing required fields")
+
+    line_id = request.json['line_id']
+    station_name = request.json['station_name']
+    first_stop_yn = request.json['first_stop_yn']
+    last_stop_yn = request.json['last_stop_yn']
+    other_details = request.json.get('other_details', '')
+
+    # Check if the line exists
+    line = RailwayLine.query.filter_by(line_number=line_id).first()
+    if not line:
+        abort(404, description="Railway Line not found")
+
+    new_station_stop = StationStop(
+        line_id=line_id,
+        station_name=station_name,
+        first_stop_yn=first_stop_yn,
+        last_stop_yn=last_stop_yn,
+        other_details=other_details
+    )
+
+    db.session.add(new_station_stop)
+    db.session.commit()
+
+    return jsonify({'message': 'created successfully'}), 201
+       
+@app.route('/station_stops/<int:station_id>', methods=['GET'])
+def get_station_stop(station_id):
+    station_stop = StationStop.query.get(station_id)
+    if station_stop is None:
+        abort(404, description="Station Stop not found")
+    
+    return jsonify({
+        'station_id': station_stop.station_id,
+        'line_id': station_stop.line_id,
+        'next_station_id': station_stop.next_station_id,
+        'station_name': station_stop.station_name,
+        'first_stop_yn': station_stop.first_stop_yn,
+        'last_stop_yn': station_stop.last_stop_yn,
+        'other_details': station_stop.other_details
+    })
+
+@app.route('/station_stops/<int:station_id>', methods=['PUT'])
+def update_station_stop(station_id):
+    station_stop = StationStop.query.get(station_id)
+    if station_stop is None:
+        abort(404, description="Station Stop not found")
+
+    if not request.json:
+        abort(400, description="Request must be JSON")
+
+    # Update fields
+    station_stop.station_name = request.json.get('station_name', station_stop.station_name)
+    station_stop.first_stop_yn = request.json.get('first_stop_yn', station_stop.first_stop_yn)
+    station_stop.last_stop_yn = request.json.get('last_stop_yn', station_stop.last_stop_yn)
+    station_stop.other_details = request.json.get('other_details', station_stop.other_details)
+
+    db.session.commit()
+
+    return jsonify({
+        'station_id': station_stop.station_id,
+        'line_id': station_stop.line_id,
+        'station_name': station_stop.station_name,
+        'first_stop_yn': station_stop.first_stop_yn,
+        'last_stop_yn': station_stop.last_stop_yn,
+        'other_details': station_stop.other_details
+    })
+
+@app.route('/api/station_stops/<int:station_id>', methods=['DELETE'])
+def delete_station_stop(station_id):
+    station_stop = StationStop.query.get(station_id)
+    if station_stop is None:
+        abort(404, description="Station Stop not found")
+
+    db.session.delete(station_stop)
+    db.session.commit()
+
+    return jsonify({'message': f'Station Stop {station_id} has been deleted'}), 200
 
 @app.route('/railway_lines', methods=['GET'])
 def get_railway_lines():
