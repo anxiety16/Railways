@@ -90,5 +90,31 @@ def test_delete_class(test_client, add_class):
     assert response.status_code == 200
     assert 'Class C001 has been deleted' in response.json['message']
 
+# Test for GET /origins
+def test_get_origins(test_client, add_origin):
+    response = test_client.get('/origins')
+    data = response.get_json()
+    assert response.status_code == 200
+    assert len(data) > 0
+    assert data[0]['origin_code'] == 'O001'
 
+# Test for POST /origins
+def test_create_origin(test_client):
+    origin_data = {'origin_code': 'O002', 'origin_description': 'New Origin'}
+    response = test_client.post('/origins', json=origin_data)
+    assert response.status_code == 201
+    assert response.json['message'] == 'Created successfully'
+
+# Test for PUT /origins/<origin_code>
+def test_update_origin(test_client, add_origin):
+    updated_data = {'origin_description': 'Updated Test Origin'}
+    response = test_client.put('/origins/O001', json=updated_data)
+    assert response.status_code == 200
+    assert response.json['message'] == 'update successfully'
+
+# Test for DELETE /origins/<origin_code>
+def test_delete_origin(test_client, add_origin):
+    response = test_client.delete('/origins/O001')
+    assert response.status_code == 200
+    assert 'Origin O001 has been deleted' in response.json['message']
 
