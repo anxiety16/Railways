@@ -211,3 +211,24 @@ def test_database_add_error(mock_add, test_client):
     response = test_client.post('/classes', json=class_data)
     assert response.status_code == 500
     assert 'error' in response.json
+
+
+# Test for GET /railway_lines
+def test_get_railway_lines(test_client, add_railway_line):
+    response = test_client.get('/railway_lines')
+    data = response.get_json()
+    assert response.status_code == 200
+    assert len(data) > 0
+    assert data[0]['line_number'] == 1
+    assert data[0]['line_name'] == 'Test Railway Line'
+
+
+# Test for GET /station_stops
+def test_get_station_stops(test_client, add_station_stop):
+    response = test_client.get('/station_stops')
+    data = response.get_json()
+    assert response.status_code == 200
+    assert len(data) > 0
+    assert data[0]['station_name'] == 'Test Station'
+    assert data[0]['first_stop_yn'] is True
+    assert data[0]['last_stop_yn'] is False
