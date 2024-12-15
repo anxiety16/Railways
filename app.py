@@ -33,6 +33,33 @@ class Origin(db.Model):
     origin_code = db.Column(db.String(10), primary_key=True)
     origin_description = db.Column(db.String(255), nullable=False)
 
+# Model for 'railway_lines' table
+class RailwayLine(db.Model):
+    __tablename__ = 'railway_lines'
+    line_number = db.Column(db.Integer, primary_key=True)
+    class_code = db.Column(db.String(10), db.ForeignKey('classes.class_code'))
+    origin_code = db.Column(db.String(10), db.ForeignKey('origins.origin_code'))
+    type_code = db.Column(db.String(10), db.ForeignKey('types.type_code'))
+    steam_or_diesel = db.Column(db.String(50))
+    line_name = db.Column(db.String(255))
+    address = db.Column(db.Text)
+    phone_number = db.Column(db.String(15))
+    fax_number = db.Column(db.String(15))
+    nearest_mainline_station = db.Column(db.String(255))
+    resident_locos_url = db.Column(db.Text)
+    route_map_url = db.Column(db.Text)
+    website_url = db.Column(db.Text)
+    total_miles = db.Column(db.Numeric(5, 2))
+    year_opened = db.Column(db.Integer)
+    membership_prices = db.Column(db.Numeric(10, 2))
+    year_built = db.Column(db.Integer)
+    other_details = db.Column(db.Text)
+    
+    # Relationships
+    class_ = db.relationship('Class', backref='railway_lines')
+    origin = db.relationship('Origin', backref='railway_lines')
+    type = db.relationship('Type', backref='railway_lines')
+
 @app.route('/')
 def home():
     return """
@@ -206,6 +233,140 @@ def delete_origin(origin_code):
     db.session.commit()
 
     return jsonify({'message': f'Origin {origin_code} has been deleted'}), 200
+
+
+@app.route('/railway_lines', methods=['GET'])
+def get_railway_lines():
+    railway_lines = RailwayLine.query.all()
+    return jsonify([{
+        'line_number': r.line_number,
+        'class_code': r.class_code,
+        'origin_code': r.origin_code,
+        'type_code': r.type_code,
+        'line_name': r.line_name,
+        'address': r.address,
+        'phone_number': r.phone_number,
+        'fax_number': r.fax_number,
+        'nearest_mainline_station': r.nearest_mainline_station,
+        'resident_locos_url': r.resident_locos_url,
+        'route_map_url': r.route_map_url,
+        'website_url': r.website_url,
+        'total_miles': r.total_miles,
+        'year_opened': r.year_opened,
+        'membership_prices': r.membership_prices,
+        'year_built': r.year_built,
+        'other_details': r.other_details
+    } for r in railway_lines])
+
+@app.route('/railway_lines', methods=['POST'])
+def create_railway_line():
+    if not request.json:
+        abort(400, description="Missing request body")
+
+    required_fields = ['line_number', 'class_code', 'origin_code', 'type_code', 'line_name']
+    if not all(field in request.json for field in required_fields):
+        abort(400, description="Missing required fields")
+
+    line_number = request.json['line_number']
+    class_code = request.json['class_code']
+    origin_code = request.json['origin_code']
+    type_code = request.json['type_code']
+    line_name = request.json['line_name']
+    
+    existing_line = RailwayLine.query.filter_by(line_number=line_number).first()
+    if existing_line:
+        abort(400, description="Railway Line with this line_number already exists")
+
+    new_railway_line = RailwayLine(
+        line_number=line_number,
+        class_code=class_code,
+        origin_code=origin_code,
+        type_code=type_code,
+        line_name=line_name,
+        address=request.json.get('address'),
+        phone_number=request.json.get('phone_number'),
+        fax_number=request.json.get('fax_number'),
+        nearest_mainline_station=request.json.get('nearest_mainline_station'),
+        resident_locos_url=request.json.get('resident_locos_url'),
+        route_map_url=request.json.get('route_map_url'),
+        website_url=request.json.get('website_url'),
+        total_miles=request.json.get('total_miles'),
+        year_opened=request.json.get('year_opened'),
+        membership_prices=request.json.get('membership_prices'),
+        year_built=request.json.get('year_built'),
+        other_details=request.json.get('other_details')
+    )
+
+    db.session.add(new_railway_line)
+    db.session.commit()
+
+    return jsonify({'line_number': new_railway_line.line_number, 'line_name': new_railway_line.line_name}), 201
+
+@app.route('/railway_lines/<int:line_number>', methods=['GET'])
+def get_railway_line(line_number):
+    railway_line = RailwayLine.query.filter_by(line_number=line_number).first()
+    if not railway_line:
+        abort(404, description="Railway Line not found")
+    return jsonify({
+        'line_number': railway_line.line_number,
+        'class_code': railway_line.class_code,
+        'origin_code': railway_line.origin_code,
+        'type_code': railway_line.type_code,
+        'line_name': railway_line.line_name,
+        'address': railway_line.address,
+        'phone_number': railway_line.phone_number,
+        'fax_number': railway_line.fax_number,
+        'nearest_mainline_station': railway_line.nearest_mainline_station,
+        'resident_locos_url': railway_line.resident_locos_url,
+        'route_map_url': railway_line.route_map_url,
+        'website_url': railway_line.website_url,
+        'total_miles': railway_line.total_miles,
+        'year_opened': railway_line.year_opened,
+        'membership_prices': railway_line.membership_prices,
+        'year_built': railway_line.year_built,
+        'other_details': railway_line.other_details
+    })
+
+@app.route('/railway_lines/<int:line_number>', methods=['PUT'])
+def update_railway_line(line_number):
+    railway_line = RailwayLine.query.filter_by(line_number=line_number).first()
+    if not railway_line:
+        abort(404, description="Railway Line not found")
+
+    if not request.json:
+        abort(400, description="Request must be JSON")
+
+    railway_line.class_code = request.json.get('class_code', railway_line.class_code)
+    railway_line.origin_code = request.json.get('origin_code', railway_line.origin_code)
+    railway_line.type_code = request.json.get('type_code', railway_line.type_code)
+    railway_line.line_name = request.json.get('line_name', railway_line.line_name)
+    railway_line.address = request.json.get('address', railway_line.address)
+    railway_line.phone_number = request.json.get('phone_number', railway_line.phone_number)
+    railway_line.fax_number = request.json.get('fax_number', railway_line.fax_number)
+    railway_line.nearest_mainline_station = request.json.get('nearest_mainline_station', railway_line.nearest_mainline_station)
+    railway_line.resident_locos_url = request.json.get('resident_locos_url', railway_line.resident_locos_url)
+    railway_line.route_map_url = request.json.get('route_map_url', railway_line.route_map_url)
+    railway_line.website_url = request.json.get('website_url', railway_line.website_url)
+    railway_line.total_miles = request.json.get('total_miles', railway_line.total_miles)
+    railway_line.year_opened = request.json.get('year_opened', railway_line.year_opened)
+    railway_line.membership_prices = request.json.get('membership_prices', railway_line.membership_prices)
+    railway_line.year_built = request.json.get('year_built', railway_line.year_built)
+    railway_line.other_details = request.json.get('other_details', railway_line.other_details)
+
+    db.session.commit()
+
+    return jsonify({'message': 'update successfully'}),200
+
+@app.route('/railway_lines/<int:line_number>', methods=['DELETE'])
+def delete_railway_line(line_number):
+    railway_line = RailwayLine.query.filter_by(line_number=line_number).first()
+    if not railway_line:
+        abort(404, description="Railway Line not found")
+
+    db.session.delete(railway_line)
+    db.session.commit()
+
+    return jsonify({'message': f'Railway Line {line_number} has been deleted'}), 200
 
 if __name__ == '__main__':
     with app.app_context():
