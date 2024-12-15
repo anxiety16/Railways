@@ -20,6 +20,56 @@ class User(db.Model):
     password = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(50), nullable=False)  # 'admin', 'user', etc.
 
+@app.route('/register', methods=['POST'])
+def register_user():
+    data = request.get_json()
+    if not data or 'username' not in data or 'password' not in data or 'role' not in data:
+        abort(400, description="Missing required fields")
+
+    username = data['username']
+    password = data['password']
+    role = data['role']
+
+    # Check if user already exists
+    if User.query.filter_by(username=username).first():
+        abort(400, description="User already exists")
+
+    new_user = User(username=username, password=password, role=role)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"message": "User registered successfully"}), 201
+
+@app.route('/login', methods=['POST'])
+def login_user():
+    data = request.get_json()
+    if not data or 'username' not in data or 'password' not in data:
+        abort(400, description="Missing username or password")
+
+    username = data['username']
+    password = data['password']
+    user = User.query.filter_by(username=username).first()
+
+    if user is None or user.password != password:
+        abort(401, description="Invalid credentials")
+
+    # Create JWT token (identity should be a simple value like username)
+    access_token = create_access_token(identity=user.username)  # Pass only username as identity
+    return jsonify(access_token=access_token), 200
+
+
+# Role-based access control decorator
+def admin_required(fn):
+    @jwt_required()
+    def wrapper(*args, **kwargs):
+        current_user = get_jwt_identity()
+        if current_user['role'] != 'admin':
+            abort(403, description="Access denied")
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+
 
 # Model for 'classes' table
 class Class(db.Model):
@@ -59,6 +109,7 @@ class RailwayLine(db.Model):
     class_ = db.relationship('Class', backref='railway_lines')
     origin = db.relationship('Origin', backref='railway_lines')
     type = db.relationship('Type', backref='railway_lines')
+
 
 # Model for 'types' table
 class Type(db.Model):
@@ -144,6 +195,8 @@ def home():
     </body>
     </html>
     """
+
+
 # Initialize the database (only run this once)
 # db.create_all()
 
@@ -202,6 +255,7 @@ def delete_class(class_code):
 
     return jsonify({'message': f'Class {class_code} has been deleted'}), 200
 
+
 @app.route('/origins', methods=['GET'])
 def get_origins():
     origins = Origin.query.all()
@@ -257,6 +311,7 @@ def delete_origin(origin_code):
     db.session.commit()
 
     return jsonify({'message': f'Origin {origin_code} has been deleted'}), 200
+
 
 @app.route('/types', methods=['GET'])
 def get_types():
@@ -330,6 +385,7 @@ def get_station_stops():
         }
         for s in station_stops
     ])
+
 
 @app.route('/station_stops', methods=['POST'])
 def create_station_stop():
@@ -416,6 +472,7 @@ def delete_station_stop(station_id):
     db.session.commit()
 
     return jsonify({'message': f'Station Stop {station_id} has been deleted'}), 200
+
 
 @app.route('/railway_lines', methods=['GET'])
 def get_railway_lines():
@@ -549,6 +606,7 @@ def delete_railway_line(line_number):
     db.session.commit()
 
     return jsonify({'message': f'Railway Line {line_number} has been deleted'}), 200
+
 
 if __name__ == '__main__':
     with app.app_context():
