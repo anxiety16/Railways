@@ -201,3 +201,13 @@ def test_database_error_handling(mock_commit, test_client):
     response = test_client.post('/classes', json=class_data)
     assert response.status_code == 500
     assert 'error' in response.json
+
+@patch('app.db.session.add')
+def test_database_add_error(mock_add, test_client):
+    """Test database add operation failure"""
+    mock_add.side_effect = Exception('Database add error')
+    
+    class_data = {'class_code': 'C004', 'class_description': 'Test Class'}
+    response = test_client.post('/classes', json=class_data)
+    assert response.status_code == 500
+    assert 'error' in response.json
