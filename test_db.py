@@ -232,3 +232,10 @@ def test_get_station_stops(test_client, add_station_stop):
     assert data[0]['station_name'] == 'Test Station'
     assert data[0]['first_stop_yn'] is True
     assert data[0]['last_stop_yn'] is False
+
+
+# Test JWT protected routes
+def test_protected_route(test_client):
+    # Test accessing protected route without JWT
+    response = test_client.get('/classes')
+    assert response.status_code == 401  # Unauthorized
