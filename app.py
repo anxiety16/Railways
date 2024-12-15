@@ -27,6 +27,12 @@ class Class(db.Model):
     class_code = db.Column(db.String(10), primary_key=True)
     class_description = db.Column(db.String(255), nullable=False)
 
+# Model for 'origins' table
+class Origin(db.Model):
+    __tablename__ = 'origins'
+    origin_code = db.Column(db.String(10), primary_key=True)
+    origin_description = db.Column(db.String(255), nullable=False)
+
 @app.route('/')
 def home():
     return """
@@ -144,6 +150,62 @@ def delete_class(class_code):
     db.session.commit()
 
     return jsonify({'message': f'Class {class_code} has been deleted'}), 200
+
+@app.route('/origins', methods=['GET'])
+def get_origins():
+    origins = Origin.query.all()
+    return jsonify([{'origin_code': o.origin_code, 'origin_description': o.origin_description} for o in origins])
+
+@app.route('/origins', methods=['POST'])
+def create_origin():
+    if not request.json or 'origin_code' not in request.json or 'origin_description' not in request.json:
+        abort(400, description="Missing required fields: origin_code or origin_description")
+    
+    origin_code = request.json['origin_code']
+    origin_description = request.json['origin_description']
+    
+    # Check if the origin already exists
+    existing_origin = Origin.query.filter_by(origin_code=origin_code).first()
+    if existing_origin:
+        abort(400, description="Origin with this origin_code already exists")
+    
+    new_origin = Origin(origin_code=origin_code, origin_description=origin_description)
+    db.session.add(new_origin)
+    db.session.commit()
+
+    return jsonify({'message': 'Created successfully'}), 201
+
+@app.route('/origins/<origin_code>', methods=['GET'])
+def get_origin(origin_code):
+    origin_info = Origin.query.filter_by(origin_code=origin_code).first()
+    if origin_info is None:
+        abort(404, description="Origin not found")
+    return jsonify({'origin_code': origin_info.origin_code, 'origin_description': origin_info.origin_description})
+
+@app.route('/origins/<origin_code>', methods=['PUT'])
+def update_origin(origin_code):
+    origin_info = Origin.query.filter_by(origin_code=origin_code).first()
+    if origin_info is None:
+        abort(404, description="Origin not found")
+
+    if not request.json:
+        abort(400, description="Request must be JSON")
+
+    origin_info.origin_description = request.json.get('origin_description', origin_info.origin_description)
+    db.session.commit()
+
+    return jsonify({'message': 'update successfully'})
+
+@app.route('/origins/<origin_code>', methods=['DELETE'])
+def delete_origin(origin_code):
+    origin_info = Origin.query.filter_by(origin_code=origin_code).first()
+    if origin_info is None:
+        abort(404, description="Origin not found")
+
+    db.session.delete(origin_info)
+    db.session.commit()
+
+    return jsonify({'message': f'Origin {origin_code} has been deleted'}), 200
 
 if __name__ == '__main__':
     with app.app_context():
