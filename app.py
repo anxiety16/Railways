@@ -60,6 +60,12 @@ class RailwayLine(db.Model):
     origin = db.relationship('Origin', backref='railway_lines')
     type = db.relationship('Type', backref='railway_lines')
 
+# Model for 'types' table
+class Type(db.Model):
+    __tablename__ = 'types'
+    type_code = db.Column(db.String(10), primary_key=True)
+    type_description = db.Column(db.String(255), nullable=False)
+
 @app.route('/')
 def home():
     return """
@@ -233,6 +239,62 @@ def delete_origin(origin_code):
     db.session.commit()
 
     return jsonify({'message': f'Origin {origin_code} has been deleted'}), 200
+
+@app.route('/types', methods=['GET'])
+def get_types():
+    types = Type.query.all()
+    return jsonify([{'type_code': t.type_code, 'type_description': t.type_description} for t in types])
+
+@app.route('/types', methods=['POST'])
+def create_type():
+    if not request.json or 'type_code' not in request.json or 'type_description' not in request.json:
+        abort(400, description="Missing required fields: type_code or type_description")
+    
+    type_code = request.json['type_code']
+    type_description = request.json['type_description']
+    
+    # Check if the type already exists
+    existing_type = Type.query.filter_by(type_code=type_code).first()
+    if existing_type:
+        abort(400, description="Type with this type_code already exists")
+    
+    new_type = Type(type_code=type_code, type_description=type_description)
+    db.session.add(new_type)
+    db.session.commit()
+
+    return jsonify({'message': 'created successfully'}), 201
+
+@app.route('/types/<type_code>', methods=['GET'])
+def get_type(type_code):
+    type_info = Type.query.filter_by(type_code=type_code).first()
+    if type_info is None:
+        abort(404, description="Type not found")
+    return jsonify({'type_code': type_info.type_code, 'type_description': type_info.type_description})
+
+@app.route('/types/<type_code>', methods=['PUT'])
+def update_type(type_code):
+    type_info = Type.query.filter_by(type_code=type_code).first()
+    if type_info is None:
+        abort(404, description="Type not found")
+
+    if not request.json:
+        abort(400, description="Request must be JSON")
+
+    type_info.type_description = request.json.get('type_description', type_info.type_description)
+    db.session.commit()
+
+    return jsonify({'message': 'update successfully'}),200
+
+@app.route('/types/<type_code>', methods=['DELETE'])
+def delete_type(type_code):
+    type_info = Type.query.filter_by(type_code=type_code).first()
+    if type_info is None:
+        abort(404, description="Type not found")
+
+    db.session.delete(type_info)
+    db.session.commit()
+
+    return jsonify({'message': f'Type {type_code} has been deleted'}), 200
 
 
 @app.route('/railway_lines', methods=['GET'])
