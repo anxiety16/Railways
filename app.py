@@ -80,6 +80,10 @@ class StationStop(db.Model):
     line = db.relationship('RailwayLine', backref=db.backref('station_stops', lazy=True))
     next_station = db.relationship('StationStop', remote_side=[station_id])
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    return jsonify({'error': str(e)}), 500
+
 @app.route('/')
 def home():
     return """
