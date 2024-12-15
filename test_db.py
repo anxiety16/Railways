@@ -148,3 +148,32 @@ def test_delete_type(test_client, add_type):
     assert 'Type T001 has been deleted' in response.json['message']
 
 
+# Test for GET /railway_lines/<line_number>
+def test_get_railway_line(test_client, add_railway_line):
+    response = test_client.get('/railway_lines/1')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['line_number'] == 1
+    assert data['line_name'] == 'Test Railway Line'
+
+
+
+# Test for PUT /railway_lines/<line_number>
+def test_update_railway_line(test_client, add_railway_line):
+    updated_data = {
+        'line_name': 'Updated Railway Line',
+        'total_miles': 12.5
+    }
+    response = test_client.put('/railway_lines/1', json=updated_data)
+    assert response.status_code == 200
+    assert response.json['message'] == 'update successfully'
+
+# Test for DELETE /railway_lines/<line_number>
+def test_delete_railway_line(test_client, add_railway_line):
+    response = test_client.delete('/railway_lines/1')
+    assert response.status_code == 200
+    assert 'Railway Line 1 has been deleted' in response.json['message']
+
+
+
+    
