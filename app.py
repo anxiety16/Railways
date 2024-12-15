@@ -27,7 +27,66 @@ class Class(db.Model):
     class_code = db.Column(db.String(10), primary_key=True)
     class_description = db.Column(db.String(255), nullable=False)
 
-
+@app.route('/')
+def home():
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Home Page</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f4f9;
+                color: #333;
+                margin: 0;
+                padding: 0;
+            }
+            header {
+                background-color: #6200ea;
+                color: white;
+                padding: 20px 0;
+                text-align: center;
+            }
+            h1 {
+                margin: 0;
+                font-size: 2.5em;
+            }
+            .content {
+                text-align: center;
+                padding: 50px 20px;
+            }
+            .content p {
+                font-size: 1.2em;
+                margin: 20px 0;
+            }
+            .button {
+                display: inline-block;
+                padding: 10px 20px;
+                font-size: 1em;
+                color: white;
+                background-color: #6200ea;
+                text-decoration: none;
+                border-radius: 5px;
+                transition: background-color 0.3s;
+            }
+            .button:hover {
+                background-color: #3700b3;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>Welcome to the Home Page</h1>
+        </header>
+        <div class="content">
+            <p>This is a simple Flask application with a styled home page.</p>
+        </div>
+    </body>
+    </html>
+    """
 # Initialize the database (only run this once)
 # db.create_all()
 
