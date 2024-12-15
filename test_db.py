@@ -70,7 +70,25 @@ def add_railway_line(test_client, add_class, add_origin, add_type):
     test_client.post('/railway_lines', json=line_data)
     yield line_data
 
-    
+# Test for POST /classes
+def test_create_class(test_client):
+    class_data = {'class_code': 'C002', 'class_description': 'New Test Class'}
+    response = test_client.post('/classes', json=class_data)
+    assert response.status_code == 201
+    assert response.json['message'] == 'created successfully'
+
+# Test for PUT /classes/<class_code>
+def test_update_class(test_client, add_class):
+    updated_data = {'class_description': 'Updated Test Class'}
+    response = test_client.put('/classes/C001', json=updated_data)
+    assert response.status_code == 200
+    assert response.json['message'] == 'update successfully'
+
+# Test for DELETE /classes/<class_code>
+def test_delete_class(test_client, add_class):
+    response = test_client.delete('/classes/C001')
+    assert response.status_code == 200
+    assert 'Class C001 has been deleted' in response.json['message']
 
 
 
