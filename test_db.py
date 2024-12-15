@@ -176,4 +176,16 @@ def test_delete_railway_line(test_client, add_railway_line):
 
 
 
+   # Test for GET /classes with pagination
+def test_get_classes_pagination(test_client):
+    # Add multiple classes
+    class_data = [
+        {'class_code': f'C00{i}', 'class_description': f'Test Class {i}'} 
+        for i in range(1, 15)  # Create 14 classes
+    ]
     
+    for data in class_data:
+        test_client.post('/classes', json=data)
+    
+    # Test default pagination (page 1, limit 10)
+    response = test_client.get('/classes') 
