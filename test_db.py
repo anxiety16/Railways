@@ -118,3 +118,33 @@ def test_delete_origin(test_client, add_origin):
     assert response.status_code == 200
     assert 'Origin O001 has been deleted' in response.json['message']
 
+# Test for GET /types
+def test_get_types(test_client, add_type):
+    response = test_client.get('/types')
+    data = response.get_json()
+    assert response.status_code == 200
+    assert len(data) > 0
+    assert data[0]['type_code'] == 'T001'
+
+# Test for POST /types
+def test_create_type(test_client):
+    type_data = {'type_code': 'T002', 'type_description': 'New Type'}
+    response = test_client.post('/types', json=type_data)
+    assert response.status_code == 201
+    assert response.json['message'] == 'created successfully'
+
+
+# Test for PUT /types/<type_code>
+def test_update_type(test_client, add_type):
+    updated_data = {'type_description': 'Updated Test Type'}
+    response = test_client.put('/types/T001', json=updated_data)
+    assert response.status_code == 200
+    assert response.json['message'] == 'update successfully'
+
+# Test for DELETE /types/<type_code>
+def test_delete_type(test_client, add_type):
+    response = test_client.delete('/types/T001')
+    assert response.status_code == 200
+    assert 'Type T001 has been deleted' in response.json['message']
+
+
