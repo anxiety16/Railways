@@ -189,3 +189,15 @@ def test_get_classes_pagination(test_client):
     
     # Test default pagination (page 1, limit 10)
     response = test_client.get('/classes') 
+
+
+
+@patch('app.db.session.commit')
+def test_database_error_handling(mock_commit, test_client):
+    """Test database error handling"""
+    mock_commit.side_effect = sqlite3.Error('Database error')
+    
+    class_data = {'class_code': 'C003', 'class_description': 'Test Class'}
+    response = test_client.post('/classes', json=class_data)
+    assert response.status_code == 500
+    assert 'error' in response.json
