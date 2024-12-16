@@ -69,8 +69,6 @@ def admin_required(fn):
     return wrapper
 
 
-
-
 # Model for 'classes' table
 class Class(db.Model):
     __tablename__ = 'classes'
@@ -209,6 +207,8 @@ def get_classes():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+
 @app.route('/classes', methods=['POST'])
 def create_class():
     if not request.json or 'class_code' not in request.json or 'class_description' not in request.json:
@@ -254,6 +254,13 @@ def delete_class(class_code):
     db.session.commit()
 
     return jsonify({'message': f'Class {class_code} has been deleted'}), 200
+
+@app.route('/classes/<class_code>', methods=['GET'])
+def get_class(class_code):
+    class_info = Class.query.filter_by(class_code=class_code).first()
+    if class_info is None:
+        abort(404, description="Class not found")
+    return jsonify({'class_code': class_info.class_code, 'class_description': class_info.class_description})
 
 
 @app.route('/origins', methods=['GET'])
